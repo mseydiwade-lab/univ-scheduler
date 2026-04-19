@@ -67,52 +67,95 @@ public class ReservationView extends VueBase {
 
     private void ajouterReservation() {
         List<Salle> salles = salleDAO.getToutesLesSalles();
-        if (salles.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Aucune salle disponible !");
-            return;
-        }
+        if (salles.isEmpty()) { JOptionPane.showMessageDialog(this, "Aucune salle disponible !"); return; }
 
-        String[] nomsSalles = salles.stream().map(Salle::getNom).toArray(String[]::new);
+        // Filtres équipements
+        JCheckBox chkProjecteur = new JCheckBox("Vidéoprojecteur");
+        JCheckBox chkTableau = new JCheckBox("Tableau interactif");
+        JCheckBox chkOrdinateurs = new JCheckBox("Ordinateurs");
+        JCheckBox chkClim = new JCheckBox("Climatisation");
+        JCheckBox chkAudio = new JCheckBox("Système audio");
+
+        JPanel panelEquip = new JPanel(new java.awt.GridLayout(3, 2));
+        panelEquip.add(chkProjecteur); panelEquip.add(chkTableau);
+        panelEquip.add(chkOrdinateurs); panelEquip.add(chkClim);
+        panelEquip.add(chkAudio);
+
         JTextField titre = new JTextField();
         JTextField desc = new JTextField();
-        JComboBox<String> comboSalle = new JComboBox<>(nomsSalles);
         JTextField date = new JTextField(new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date()));
         JTextField heureDebut = new JTextField("08:00");
         JTextField heureFin = new JTextField("10:00");
         JTextField motif = new JTextField();
 
-        Object[] champs = {"Titre :", titre, "Description :", desc, "Salle :", comboSalle,
-                "Date (yyyy-MM-dd) :", date, "Heure début :", heureDebut, "Heure fin :", heureFin, "Motif :", motif};
+        Object[] champsEquip = {
+                "Équipements requis :", panelEquip,
+                "Titre :", titre,
+                "Description :", desc,
+                "Date (yyyy-MM-dd) :", date,
+                "Heure début :", heureDebut,
+                "Heure fin :", heureFin,
+                "Motif :", motif
+        };
 
-        if (JOptionPane.showConfirmDialog(this, champs, "Nouvelle réservation", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            if (titre.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Le titre est obligatoire !");
-                return;
-            }
+        if (JOptionPane.showConfirmDialog(this, champsEquip, "Nouvelle réservation", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            if (titre.getText().isEmpty()) { JOptionPane.showMessageDialog(this, "Le titre est obligatoire !"); return; }
 
-            // Vérifier que la date n'est pas dans le passé
-            String dateChoisie = date.getText();
+            // Vérifier date passée
             String dateAujourdhui = new java.text.SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date());
-            if (dateChoisie.compareTo(dateAujourdhui) < 0) {
+            if (date.getText().compareTo(dateAujourdhui) < 0) {
                 JOptionPane.showMessageDialog(this, "❌ Impossible de réserver une date dans le passé !", "Date invalide", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
-            Reservation r = new Reservation();
-            r.setSalleId(salles.get(comboSalle.getSelectedIndex()).getId());
-            r.setUtilisateurId(utilisateurConnecte.getId());
-            r.setTitre(titre.getText());
-            r.setDescription(desc.getText());
-            r.setDateReservation(date.getText());
-            r.setHeureDebut(heureDebut.getText());
-            r.setHeureFin(heureFin.getText());
-            r.setMotif(motif.getText());
+            // Filtrer salles par équipements
+            List<Integer> equipsRequis = new java.util.ArrayList<>();
+            if (chkProjecteur.isSelected()) equipsRequis.add(1);
+            if (chkTableau.isSelected()) equipsRequis.add(2);
+            if (chkOrdinateurs.isSelected()) equipsRequis.add(3);
+            if (chkClim.isSelected()) equipsRequis.add(5);
+            if (chkAudio.isSelected()) equipsRequis.add(6);
 
-            if (reservationDAO.ajouter(r)) {
-                JOptionPane.showMessageDialog(this, "✅ Réservation soumise ! En attente d'approbation.");
-                notifDAO.ajouter(utilisateurConnecte.getId(), "📋 Réservation soumise",
-                        "Votre réservation \"" + titre.getText() + "\" est en attente d'approbation.", "INFO");
-                chargerDonnees();
+            List<Salle> sallesFiltrees = salles;
+            if (!equipsRequis.isEmpty()) {
+                sallesFiltrees = salles.stream()
+                        .filter(s -> {
+                            List<String> equips = salleDAO.getEquipementsDeSalle(s.getId());
+                            return equipsRequis.stream().allMatch(id -> {
+                                String[] noms = {"", "Videoprojecteur", "Tableau interactif", "Ordinateurs", "Microscope", "Climatisation", "Systeme audio"};
+                                return equips.stream().anyMatch(e -> e.contains(noms[id]));
+                            });
+                        })
+                        .collect(java.util.stream.Collectors.toList());
+            }
+
+            if (sallesFiltrees.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "❌ Aucune salle avec ces équipements !", "Aucune salle", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Choisir parmi les salles filtrées
+            String[] nomsSalles = sallesFiltrees.stream().map(Salle::getNom).toArray(String[]::new);
+            JComboBox<String> comboSalle = new JComboBox<>(nomsSalles);
+            Object[] champsSalle = {"Salles disponibles avec vos équipements :", comboSalle};
+
+            if (JOptionPane.showConfirmDialog(this, champsSalle, "Choisir une salle", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+                Reservation r = new Reservation();
+                r.setSalleId(sallesFiltrees.get(comboSalle.getSelectedIndex()).getId());
+                r.setUtilisateurId(utilisateurConnecte.getId());
+                r.setTitre(titre.getText());
+                r.setDescription(desc.getText());
+                r.setDateReservation(date.getText());
+                r.setHeureDebut(heureDebut.getText());
+                r.setHeureFin(heureFin.getText());
+                r.setMotif(motif.getText());
+
+                if (reservationDAO.ajouter(r)) {
+                    JOptionPane.showMessageDialog(this, "✅ Réservation soumise ! En attente d'approbation.");
+                    notifDAO.ajouter(utilisateurConnecte.getId(), "📋 Réservation soumise",
+                            "Votre réservation \"" + titre.getText() + "\" est en attente d'approbation.", "INFO");
+                    chargerDonnees();
+                }
             }
         }
     }

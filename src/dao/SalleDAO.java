@@ -106,4 +106,15 @@ public class SalleDAO {
         } catch (SQLException e) { System.out.println("Erreur équipements : " + e.getMessage()); }
         return liste;
     }
+
+    public boolean ajouterEquipement(int salleId, int equipementId) {
+        String sql = "INSERT OR IGNORE INTO salle_equipement (salle_id, equipement_id, quantite) VALUES (?, ?, 1)";
+        try {
+            PreparedStatement ps = DatabaseConnection.getConnection().prepareStatement(sql);
+            ps.setInt(1, salleId);
+            ps.setInt(2, equipementId);
+            ps.executeUpdate();
+            return true;
+        } catch (SQLException e) { System.out.println("Erreur équipement : " + e.getMessage()); return false; }
+    }
 }
