@@ -117,8 +117,12 @@ public class MainView extends JFrame {
         sidebar.add(Box.createVerticalStrut(10));
         ajouterSeparateur(sidebar, "SERVICES");
 
-        ajouterBoutonMenu(sidebar, "📋", "Réservations", () -> afficherVue(new ReservationView(utilisateurConnecte)));
-        ajouterBoutonMenu(sidebar, "📊", "Rapports", () -> afficherVue(new RapportView(utilisateurConnecte)));
+        if (!utilisateurConnecte.getRole().equals("ETUDIANT")) {
+            ajouterBoutonMenu(sidebar, "📋", "Réservations", () -> afficherVue(new ReservationView(utilisateurConnecte)));
+        }
+        if (!utilisateurConnecte.getRole().equals("ETUDIANT")) {
+            ajouterBoutonMenu(sidebar, "📊", "Rapports", () -> afficherVue(new RapportView(utilisateurConnecte)));
+        }
 
         // Notifications avec badge
         JPanel panelNotif = new JPanel(new BorderLayout());
