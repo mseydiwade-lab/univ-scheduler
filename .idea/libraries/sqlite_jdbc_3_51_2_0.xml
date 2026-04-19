@@ -1,9 +1,13 @@
 <component name="libraryTable">
   <library name="sqlite-jdbc-3.51.2.0">
     <CLASSES>
-      <root url="jar://$USER_HOME$/Downloads/sqlite-jdbc-3.51.2.0.jar!/" />
+      <root url="jar://$USER_HOME$/Downloads/javamail1_4_7/javamail-1.4.7/mail.jar!/" />
+      <root url="file://$PROJECT_DIR$/../univ-scheduler-v1.0/lib" />
     </CLASSES>
-    <JAVADOC />
+    <JAVADOC>
+      <root url="jar://$USER_HOME$/Downloads/javamail1_4_7.zip!/javamail-1.4.7/docs/javadocs" />
+    </JAVADOC>
     <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/../univ-scheduler-v1.0/lib" recursive="false" />
   </library>
 </component>

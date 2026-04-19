@@ -152,7 +152,13 @@ public class MainView extends JFrame {
 
         sidebar.add(Box.createVerticalGlue());
 
+        // Section Mon Compte
+        sidebar.add(Box.createVerticalStrut(10));
+        ajouterSeparateur(sidebar, "MON COMPTE");
+        ajouterBoutonMenu(sidebar, "👤", "Mon Profil", () -> afficherVue(new ProfilView(utilisateurConnecte)));
+
         // Déconnexion
+        sidebar.add(Box.createVerticalStrut(10));
         JButton btnDeconnexion = creerBoutonMenu("🚪", "Déconnexion", () -> seDeconnecter());
         btnDeconnexion.setForeground(Theme.DANGER);
         sidebar.add(btnDeconnexion);

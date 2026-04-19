@@ -2,6 +2,8 @@ package views;
 
 import dao.UtilisateurDAO;
 import models.Utilisateur;
+import services.EmailService;
+import utils.PasswordGenerator;
 import javax.swing.*;
 import java.util.List;
 
@@ -42,19 +44,63 @@ public class UtilisateurView extends VueBase {
     }
 
     private void ajouterUtilisateur() {
-        JTextField nomUtil = new JTextField(); JTextField mdp = new JTextField();
-        JTextField email = new JTextField(); JTextField prenom = new JTextField();
+        JTextField nomUtil = new JTextField();
+        JTextField email = new JTextField();
+        JTextField prenom = new JTextField();
         JTextField nom = new JTextField();
         JComboBox<String> role = new JComboBox<>(new String[]{"ADMIN", "GESTIONNAIRE", "ENSEIGNANT", "ETUDIANT"});
         JTextField dept = new JTextField();
         JTextField groupeClasse = new JTextField();
-        Object[] champs = {"Nom utilisateur :", nomUtil, "Mot de passe :", mdp, "Email :", email,
-                "Prénom :", prenom, "Nom :", nom, "Rôle :", role, "Département :", dept, "Groupe classe :", groupeClasse};
+        
+        Object[] champs = {
+            "Nom utilisateur :", nomUtil,
+            "Email :", email,
+            "Prénom :", prenom,
+            "Nom :", nom,
+            "Rôle :", role,
+            "Département :", dept,
+            "Groupe classe :", groupeClasse
+        };
+        
         if (JOptionPane.showConfirmDialog(this, champs, "Nouvel utilisateur", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            Utilisateur u = new Utilisateur(nomUtil.getText(), mdp.getText(), email.getText(), prenom.getText(), nom.getText(), role.getSelectedItem().toString());
+            // Générer un mot de passe aléatoire
+            String motDePasseGenere = PasswordGenerator.generatePassword();
+            
+            Utilisateur u = new Utilisateur(
+                nomUtil.getText(), 
+                motDePasseGenere, 
+                email.getText(), 
+                prenom.getText(), 
+                nom.getText(), 
+                role.getSelectedItem().toString()
+            );
             u.setDepartement(dept.getText());
             u.setGroupeClasse(groupeClasse.getText());
-            if (utilisateurDAO.ajouter(u)) { JOptionPane.showMessageDialog(this, "✅ Utilisateur ajouté !"); chargerDonnees(); }
+            
+            if (utilisateurDAO.ajouter(u)) {
+                // Envoyer le mot de passe par email
+                EmailService emailService = new EmailService();
+                boolean emailEnvoye = emailService.envoyerCredentials(
+                    email.getText(),
+                    nomUtil.getText(),
+                    motDePasseGenere,
+                    prenom.getText(),
+                    nom.getText()
+                );
+                
+                if (emailEnvoye) {
+                    JOptionPane.showMessageDialog(this, 
+                        "✅ Utilisateur ajouté !\nUn email avec les identifiants a été envoyé à " + email.getText());
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "⚠️ Utilisateur ajouté, mais l'email n'a pas pu être envoyé.\n" +
+                        "Mot de passe généré : " + motDePasseGenere, 
+                        "Attention", JOptionPane.WARNING_MESSAGE);
+                }
+                chargerDonnees();
+            } else {
+                JOptionPane.showMessageDialog(this, "❌ Erreur lors de l'ajout de l'utilisateur !");
+            }
         }
     }
 
